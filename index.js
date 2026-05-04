@@ -1,19 +1,25 @@
-require('dotenv').config();
-
 const express = require("express");
 const app = express();
 
 app.get("/", (req, res) => {
-    res.send("Bot activo");
+  res.send("Bot activo");
 });
 
-// IMPORTANTE: puerto dinámico para Render
-app.listen(process.env.PORT || 10000);
+app.listen(10000);
 
 process.on('unhandledRejection', console.error);
 process.on('uncaughtException', console.error);
 
-const { Client, GatewayIntentBits, PermissionsBitField, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+require('dotenv').config();
+const {
+    Client,
+    GatewayIntentBits,
+    PermissionsBitField,
+    REST,
+    Routes,
+    SlashCommandBuilder,
+    EmbedBuilder
+} = require('discord.js');
 
 const client = new Client({
     intents: [
@@ -26,7 +32,7 @@ const client = new Client({
 
 const prefix = "n!";
 
-// 🔥 IDs DE CANALES
+// CANALES
 const WELCOME_CHANNEL_ID = "1478407879076872386";
 const LEAVE_CHANNEL_ID = "1478407852950294610";
 
@@ -67,15 +73,7 @@ const commands = [
 
     new SlashCommandBuilder().setName('ruleta').setDescription('Ruleta'),
     new SlashCommandBuilder().setName('adivinar').setDescription('Adivinar'),
-    new SlashCommandBuilder().setName('coinflip').setDescription('Cara o cruz'),
-
-    new SlashCommandBuilder().setName('userinfo').setDescription('Info usuario')
-        .addUserOption(o => o.setName('usuario').setDescription('Usuario')),
-
-    new SlashCommandBuilder().setName('serverinfo').setDescription('Info server'),
-
-    new SlashCommandBuilder().setName('avatar').setDescription('Avatar')
-        .addUserOption(o => o.setName('usuario').setDescription('Usuario'))
+    new SlashCommandBuilder().setName('coinflip').setDescription('Cara o cruz')
 ].map(cmd => cmd.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -101,31 +99,17 @@ client.on('guildMemberAdd', member => {
     const canal = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
     if (!canal) return;
 
-    const fecha = new Date();
-    const hora = fecha.toLocaleTimeString('es-CL', {
+    const hora = new Date().toLocaleTimeString('es-CL', {
         hour: '2-digit',
         minute: '2-digit'
     });
 
-    canal.send(`¡Hey ${member.user}, bienvenido a la comunidad!`);
-
     const embed = new EmbedBuilder()
         .setColor(0xFFD700)
-        .setTitle("🌟 ¡NUEVO MIEMBRO EN LA TIENDA! 🌟")
+        .setTitle("🌟 NUEVO MIEMBRO 🌟")
         .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-        .setDescription(
-`Nos alegra tenerte por aquí, **${member.user.username}**. Asegúrate de leer las reglas y revisar nuestros canales.
-
-🎮 ¿Qué ofrecemos?
-• Comunidad activa.
-• Más de 500 uncopylockeds.
-• Staff rápido y eficiente.
-
-Recuerda leer las normas.`
-        )
-        .setFooter({
-            text: `Eres el usuario #${member.guild.memberCount} del servidor • hoy a las ${hora}`
-        });
+        .setDescription(`Bienvenido **${member.user.username}**`)
+        .setFooter({ text: `Miembro #${member.guild.memberCount} • ${hora}` });
 
     canal.send({ embeds: [embed] });
 });
@@ -135,79 +119,76 @@ client.on('guildMemberRemove', member => {
     const canal = member.guild.channels.cache.get(LEAVE_CHANNEL_ID);
     if (!canal) return;
 
-    const fecha = new Date();
-    const hora = fecha.toLocaleTimeString('es-CL', {
+    const hora = new Date().toLocaleTimeString('es-CL', {
         hour: '2-digit',
         minute: '2-digit'
     });
 
-    canal.send(`😢 ${member.user} ha salido de la comunidad...`);
-
     const embed = new EmbedBuilder()
         .setColor(0xff0000)
-        .setTitle("❌ UN MIEMBRO HA SALIDO ❌")
-        .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-        .setDescription(
-`El usuario **${member.user.username}** ha abandonado el servidor.
-
-Esperamos que haya tenido una buena experiencia.`
-        )
-        .setFooter({
-            text: `Ahora somos ${member.guild.memberCount} miembros • hoy a las ${hora}`
-        });
+        .setTitle("❌ SE FUE UN MIEMBRO ❌")
+        .setDescription(`**${member.user.username}** salió del servidor`)
+        .setFooter({ text: `Ahora somos ${member.guild.memberCount} • ${hora}` });
 
     canal.send({ embeds: [embed] });
 });
 
-// ================= PREFIX =================
+// ================= PREFIX COMMANDS =================
 client.on('messageCreate', async (message) => {
-    if (!message.content.startsWith(prefix) || message.author.bot) return;
+    try {
+        if (!message.content.startsWith(prefix) || message.author.bot) return;
+        if (!message.guild) return;
 
-    const args = message.content.slice(prefix.length).split(/ +/);
-    const cmd = args.shift().toLowerCase();
+        const args = message.content.slice(prefix.length).trim().split(/ +/);
+        const cmd = args.shift().toLowerCase();
 
-    if (cmd === "help") {
-        const embed = new EmbedBuilder()
-            .setColor(0x000000)
-            .setTitle("📜 NIROX COMMANDS")
-            .setDescription("Todos los comandos disponibles")
-            .addFields(
-                { name: "🔧 Moderación", value: "ban, kick, mute, unmute, warn, nick, clear" },
-                { name: "🎮 Diversión", value: "8ball, ruleta, adivinar, coinflip" },
-                { name: "🛠 Utilidad", value: "ping, say, userinfo, serverinfo, avatar" }
-            );
-        message.channel.send({ embeds: [embed] });
-    }
+        // HELP
+        if (cmd === "help") {
+            const embed = new EmbedBuilder()
+                .setColor(0x000000)
+                .setTitle("📜 COMANDOS")
+                .setDescription("Lista de comandos disponibles");
+            return message.channel.send({ embeds: [embed] });
+        }
 
-    if (cmd === "unmute") {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+        // SAY FIX
+        if (cmd === "say") {
+            const texto = args.join(" ");
+            if (!texto) return message.reply("Uso: n!say hola");
+            return message.channel.send(texto);
+        }
 
-        const user = message.mentions.members.first();
-        if (!user) return message.reply("Usuario no encontrado");
+        // COINFLIP
+        if (cmd === "coinflip") {
+            return message.channel.send(Math.random() < 0.5 ? "Cara" : "Cruz");
+        }
 
-        let role = message.guild.roles.cache.find(r => r.name === "Muted");
-        if (!role) return message.reply("No existe rol Muted");
+        // ADIVINAR FIX
+        if (cmd === "adivinar") {
+            const opciones = ["Rojo", "Azul", "Verde", "Negro", "Blanco"];
+            return message.channel.send(opciones[Math.floor(Math.random() * opciones.length)]);
+        }
 
-        user.roles.remove(role);
-        message.channel.send("🔊 Desmuteado");
-    }
+        // USERINFO
+        if (cmd === "userinfo") {
+            const user = message.mentions.users.first() || message.author;
+            return message.channel.send(`Usuario: ${user.tag}`);
+        }
 
-    if (cmd === "coinflip") {
-        message.channel.send(Math.random() < 0.5 ? "Cara" : "Cruz");
-    }
+        // SERVERINFO
+        if (cmd === "serverinfo") {
+            return message.channel.send(`Servidor: ${message.guild.name}`);
+        }
 
-    if (cmd === "userinfo") {
-        const user = message.mentions.users.first() || message.author;
-        message.channel.send(`Usuario: ${user.tag}`);
-    }
+        // AVATAR
+        if (cmd === "avatar") {
+            const user = message.mentions.users.first() || message.author;
+            return message.channel.send(user.displayAvatarURL());
+        }
 
-    if (cmd === "serverinfo") {
-        message.channel.send(`Servidor: ${message.guild.name}`);
-    }
-
-    if (cmd === "avatar") {
-        const user = message.mentions.users.first() || message.author;
-        message.channel.send(user.displayAvatarURL());
+    } catch (err) {
+        console.log(err);
+        message.channel.send("Error ejecutando comando");
     }
 });
 
@@ -226,79 +207,26 @@ client.on('interactionCreate', async interaction => {
 
     if (name === "say") {
         const texto = interaction.options.getString('texto');
-        if (texto.includes("@everyone") || texto.includes("@here"))
-            return interaction.reply("No permitido");
-
         return interaction.reply(texto);
     }
 
-    if (name === "clear") {
-        if (!interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator))
-            return;
-
-        const amount = interaction.options.getInteger('cantidad');
-        await interaction.channel.bulkDelete(amount);
-        return interaction.reply(`🧹 ${amount} eliminados`);
-    }
-
-    if (name === "ban") {
-        const user = interaction.options.getMember('usuario');
-        if (user) user.ban();
-        return interaction.reply("Baneado");
-    }
-
-    if (name === "kick") {
-        const user = interaction.options.getMember('usuario');
-        if (user) user.kick();
-        return interaction.reply("Kickeado");
-    }
-
-    if (name === "mute") {
-        const user = interaction.options.getMember('usuario');
-        let role = interaction.guild.roles.cache.find(r => r.name === "Muted");
-        if (!role) role = await interaction.guild.roles.create({ name: "Muted" });
-
-        user.roles.add(role);
-        return interaction.reply("Muteado");
-    }
-
-    if (name === "unmute") {
-        const user = interaction.options.getMember('usuario');
-        let role = interaction.guild.roles.cache.find(r => r.name === "Muted");
-        if (!role) return interaction.reply("No hay rol Muted");
-
-        user.roles.remove(role);
-        return interaction.reply("Desmuteado");
-    }
-
-    if (name === "warn") {
-        const user = interaction.options.getUser('usuario');
-        return interaction.reply(`⚠️ ${user.tag} advertido`);
-    }
-
-    if (name === "nick") {
-        const user = interaction.options.getMember('usuario');
-        const nombre = interaction.options.getString('nombre');
-        user.setNickname(nombre);
-        return interaction.reply("Nick cambiado");
-    }
-
-    if (name === "ruleta")
-        return interaction.reply(Math.random() < 0.5 ? "💀 Perdiste" : "🎉 Ganaste");
-
-    if (name === "adivinar")
-        return interaction.reply(`Número: ${Math.floor(Math.random() * 10)}`);
-
-    if (name === "coinflip")
+    if (name === "coinflip") {
         return interaction.reply(Math.random() < 0.5 ? "Cara" : "Cruz");
+    }
+
+    if (name === "adivinar") {
+        const opciones = ["Rojo", "Azul", "Verde", "Negro", "Blanco"];
+        return interaction.reply(opciones[Math.floor(Math.random() * opciones.length)]);
+    }
 
     if (name === "userinfo") {
         const user = interaction.options.getUser('usuario') || interaction.user;
         return interaction.reply(user.tag);
     }
 
-    if (name === "serverinfo")
+    if (name === "serverinfo") {
         return interaction.reply(interaction.guild.name);
+    }
 
     if (name === "avatar") {
         const user = interaction.options.getUser('usuario') || interaction.user;
