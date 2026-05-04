@@ -1,10 +1,7 @@
 const express = require("express");
 const app = express();
 
-app.get("/", (req, res) => {
-  res.send("Bot activo");
-});
-
+app.get("/", (req, res) => res.send("Bot activo"));
 app.listen(10000);
 
 process.on("unhandledRejection", console.error);
@@ -12,22 +9,22 @@ process.on("uncaughtException", console.error);
 
 require("dotenv").config();
 const {
-    Client,
-    GatewayIntentBits,
-    PermissionsBitField,
-    REST,
-    Routes,
-    SlashCommandBuilder,
-    EmbedBuilder
+  Client,
+  GatewayIntentBits,
+  PermissionsBitField,
+  REST,
+  Routes,
+  SlashCommandBuilder,
+  EmbedBuilder
 } = require("discord.js");
 
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
-    ]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers
+  ]
 });
 
 const prefix = "n!";
@@ -35,183 +32,219 @@ const prefix = "n!";
 const WELCOME_CHANNEL_ID = "1478407879076872386";
 const LEAVE_CHANNEL_ID = "1478407852950294610";
 
-// ================= SLASH COMMANDS =================
+const money = {};
+
+// ================= SLASH =================
 const commands = [
-    new SlashCommandBuilder().setName("ping").setDescription("Responde pong"),
+  new SlashCommandBuilder().setName("ping").setDescription("🏓 Pong"),
 
-    new SlashCommandBuilder().setName("8ball")
-        .setDescription("Pregunta algo")
-        .addStringOption(o => o.setName("pregunta").setDescription("Pregunta").setRequired(true)),
+  new SlashCommandBuilder().setName("say")
+    .setDescription("Repite texto")
+    .addStringOption(o => o.setName("texto").setDescription("Texto").setRequired(true)),
 
-    new SlashCommandBuilder().setName("say")
-        .setDescription("El bot dice algo")
-        .addStringOption(o => o.setName("texto").setDescription("Texto").setRequired(true)),
+  new SlashCommandBuilder().setName("8ball")
+    .setDescription("Pregunta algo")
+    .addStringOption(o => o.setName("pregunta").setDescription("Pregunta").setRequired(true)),
 
-    new SlashCommandBuilder().setName("coinflip").setDescription("Cara o cruz"),
-    new SlashCommandBuilder().setName("adivinar").setDescription("Adivinar"),
-    new SlashCommandBuilder().setName("userinfo").setDescription("Info usuario"),
-    new SlashCommandBuilder().setName("serverinfo").setDescription("Info server"),
-    new SlashCommandBuilder().setName("avatar").setDescription("Avatar")
+  new SlashCommandBuilder().setName("coinflip").setDescription("Cara o cruz"),
+  new SlashCommandBuilder().setName("adivinar").setDescription("Color aleatorio"),
+
+  new SlashCommandBuilder().setName("balance").setDescription("Ver dinero"),
+  new SlashCommandBuilder().setName("daily").setDescription("Recompensa diaria"),
+
+  new SlashCommandBuilder().setName("ban")
+    .setDescription("Banear usuario")
+    .addUserOption(o => o.setName("usuario").setDescription("Usuario").setRequired(true)),
+
+  new SlashCommandBuilder().setName("kick")
+    .setDescription("Kick usuario")
+    .addUserOption(o => o.setName("usuario").setDescription("Usuario").setRequired(true)),
+
+  new SlashCommandBuilder().setName("userinfo").setDescription("Info usuario"),
+  new SlashCommandBuilder().setName("serverinfo").setDescription("Info server"),
+  new SlashCommandBuilder().setName("avatar").setDescription("Avatar")
 ].map(c => c.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
 (async () => {
-    try {
-        await rest.put(
-            Routes.applicationCommands("1500615147293769808"),
-            { body: commands }
-        );
-    } catch (err) {
-        console.log(err);
-    }
+  try {
+    await rest.put(
+      Routes.applicationCommands("1500615147293769808"),
+      { body: commands }
+    );
+  } catch (e) {
+    console.log(e);
+  }
 })();
 
 // ================= READY =================
 client.on("ready", () => {
-    console.log(`Bot listo como ${client.user.tag}`);
+  console.log(`Bot listo como ${client.user.tag}`);
 });
 
 // ================= BIENVENIDA =================
 client.on("guildMemberAdd", member => {
-    const canal = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
-    if (!canal) return;
+  const canal = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
+  if (!canal) return;
 
-    const embed = new EmbedBuilder()
-        .setColor(0xFFD700)
-        .setTitle("🌟 Bienvenido")
-        .setDescription(`Bienvenido ${member.user.username}`)
-        .setThumbnail(member.user.displayAvatarURL());
+  const embed = new EmbedBuilder()
+    .setColor(0xFFD700)
+    .setTitle("🌟 NUEVO MIEMBRO")
+    .setDescription(`Bienvenido ${member.user.username}`)
+    .setThumbnail(member.user.displayAvatarURL());
 
-    canal.send({ embeds: [embed] });
+  canal.send({ embeds: [embed] });
 });
 
 // ================= DESPEDIDA =================
 client.on("guildMemberRemove", member => {
-    const canal = member.guild.channels.cache.get(LEAVE_CHANNEL_ID);
-    if (!canal) return;
+  const canal = member.guild.channels.cache.get(LEAVE_CHANNEL_ID);
+  if (!canal) return;
 
-    const embed = new EmbedBuilder()
-        .setColor(0xff0000)
-        .setTitle("👋 Se fue un miembro")
-        .setDescription(`${member.user.username} salió del servidor`);
+  const embed = new EmbedBuilder()
+    .setColor(0xff0000)
+    .setTitle("👋 Se fue un miembro")
+    .setDescription(`${member.user.username} salió del servidor`);
 
-    canal.send({ embeds: [embed] });
+  canal.send({ embeds: [embed] });
 });
 
-// ================= PREFIX COMMANDS =================
+// ================= PREFIX =================
 client.on("messageCreate", async (message) => {
-    try {
-        if (!message.content.startsWith(prefix) || message.author.bot) return;
-        if (!message.guild) return;
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+  if (!message.guild) return;
 
-        const args = message.content.slice(prefix.length).trim().split(/ +/);
-        const cmd = args.shift().toLowerCase();
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const cmd = args.shift().toLowerCase();
 
-        // HELP
-        if (cmd === "help") {
-            const embed = new EmbedBuilder()
-                .setColor(0x000000)
-                .setTitle("📜 COMANDOS NIROX")
-                .setDescription(
-`n!ping  
-n!say  
-n!adivinar  
-n!coinflip  
-n!userinfo  
-n!serverinfo  
-n!avatar  
-n!help`
-                );
-            return message.channel.send({ embeds: [embed] });
+  const id = message.author.id;
+  if (!money[id]) money[id] = 0;
+
+  // ================= PRO HELP =================
+  if (cmd === "help") {
+    const embed = new EmbedBuilder()
+      .setColor(0x5865F2)
+      .setTitle("🤖 NIROX SYSTEM PANEL")
+      .setDescription("Comandos disponibles del bot")
+      .addFields(
+        {
+          name: "⚡ BÁSICOS",
+          value: "`n!ping` · `n!say` · `n!adivinar` · `n!coinflip`"
+        },
+        {
+          name: "👤 INFORMACIÓN",
+          value: "`n!userinfo` · `n!serverinfo` · `n!avatar`"
+        },
+        {
+          name: "🛡 MODERACIÓN",
+          value: "`n!ban` · `n!kick`"
+        },
+        {
+          name: "💰 ECONOMÍA",
+          value: "`n!balance` · `n!daily`"
+        },
+        {
+          name: "⚡ SLASH COMMANDS",
+          value: "`/ping` `/say` `/8ball` `/coinflip` `/adivinar` `/balance` `/daily` `/ban` `/kick`"
         }
+      )
+      .setFooter({ text: "Nirox Bot • System Ready" })
+      .setTimestamp();
 
-        // PING
-        if (cmd === "ping") {
-            return message.channel.send("🏓 Pong");
-        }
+    return message.channel.send({ embeds: [embed] });
+  }
 
-        // SAY FIX
-        if (cmd === "say") {
-            const texto = args.join(" ");
-            if (!texto) return message.reply("Uso: n!say hola");
-            return message.channel.send(texto);
-        }
+  // ================= ECONOMÍA =================
+  if (cmd === "balance") {
+    return message.channel.send(`💰 Tienes **${money[id]} coins**`);
+  }
 
-        // COINFLIP
-        if (cmd === "coinflip") {
-            return message.channel.send(Math.random() < 0.5 ? "Cara" : "Cruz");
-        }
+  if (cmd === "daily") {
+    money[id] += 100;
+    return message.channel.send("💰 +100 coins diarios");
+  }
 
-        // ADIVINAR FIX
-        if (cmd === "adivinar") {
-            const respuestas = ["Rojo", "Azul", "Verde", "Negro", "Blanco"];
-            return message.channel.send(respuestas[Math.floor(Math.random() * respuestas.length)]);
-        }
+  // ================= MODERACIÓN =================
+  if (cmd === "ban") {
+    if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers))
+      return message.reply("❌ Sin permisos");
 
-        // USERINFO
-        if (cmd === "userinfo") {
-            const user = message.mentions.users.first() || message.author;
-            return message.channel.send(`Usuario: ${user.tag}`);
-        }
+    const member = message.mentions.members.first();
+    if (!member) return message.reply("Menciona alguien");
 
-        // SERVERINFO
-        if (cmd === "serverinfo") {
-            return message.channel.send(`Servidor: ${message.guild.name}`);
-        }
+    member.ban();
+    return message.channel.send("🔨 Usuario baneado");
+  }
 
-        // AVATAR
-        if (cmd === "avatar") {
-            const user = message.mentions.users.first() || message.author;
-            return message.channel.send(user.displayAvatarURL());
-        }
+  if (cmd === "kick") {
+    if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers))
+      return message.reply("❌ Sin permisos");
 
-    } catch (err) {
-        console.log(err);
-        message.channel.send("Error en comando");
-    }
+    const member = message.mentions.members.first();
+    if (!member) return message.reply("Menciona alguien");
+
+    member.kick();
+    return message.channel.send("👢 Usuario kickeado");
+  }
+
+  // ================= BÁSICOS =================
+  if (cmd === "ping") return message.channel.send("🏓 Pong");
+
+  if (cmd === "say") {
+    const text = args.join(" ");
+    if (!text) return message.reply("Escribe algo");
+
+    await message.delete().catch(() => {});
+    return message.channel.send(text);
+  }
+
+  if (cmd === "coinflip")
+    return message.channel.send(Math.random() < 0.5 ? "Cara" : "Cruz");
+
+  if (cmd === "adivinar") {
+    const c = ["Rojo", "Azul", "Verde", "Negro", "Blanco"];
+    return message.channel.send(c[Math.floor(Math.random() * c.length)]);
+  }
+
+  if (cmd === "userinfo") {
+    const u = message.mentions.users.first() || message.author;
+    return message.channel.send(u.tag);
+  }
+
+  if (cmd === "serverinfo")
+    return message.channel.send(message.guild.name);
+
+  if (cmd === "avatar") {
+    const u = message.mentions.users.first() || message.author;
+    return message.channel.send(u.displayAvatarURL());
+  }
 });
 
 // ================= SLASH =================
-client.on("interactionCreate", async (interaction) => {
-    if (!interaction.isChatInputCommand()) return;
+client.on("interactionCreate", async (i) => {
+  if (!i.isChatInputCommand()) return;
 
-    const name = interaction.commandName;
+  const id = i.user.id;
+  if (!money[id]) money[id] = 0;
 
-    if (name === "ping") return interaction.reply("🏓 Pong");
+  if (i.commandName === "ping") return i.reply("🏓 Pong");
 
-    if (name === "8ball") {
-        const respuestas = ["Sí", "No", "Tal vez"];
-        return interaction.reply(respuestas[Math.floor(Math.random() * respuestas.length)]);
-    }
+  if (i.commandName === "balance")
+    return i.reply(`💰 ${money[id]} coins`);
 
-    if (name === "say") {
-        const texto = interaction.options.getString("texto");
-        return interaction.reply(texto);
-    }
+  if (i.commandName === "daily") {
+    money[id] += 100;
+    return i.reply("+100 coins");
+  }
 
-    if (name === "coinflip") {
-        return interaction.reply(Math.random() < 0.5 ? "Cara" : "Cruz");
-    }
+  if (i.commandName === "coinflip")
+    return i.reply(Math.random() < 0.5 ? "Cara" : "Cruz");
 
-    if (name === "adivinar") {
-        const respuestas = ["Rojo", "Azul", "Verde", "Negro", "Blanco"];
-        return interaction.reply(respuestas[Math.floor(Math.random() * respuestas.length)]);
-    }
-
-    if (name === "userinfo") {
-        const user = interaction.options.getUser("usuario") || interaction.user;
-        return interaction.reply(user.tag);
-    }
-
-    if (name === "serverinfo") {
-        return interaction.reply(interaction.guild.name);
-    }
-
-    if (name === "avatar") {
-        const user = interaction.options.getUser("usuario") || interaction.user;
-        return interaction.reply(user.displayAvatarURL());
-    }
+  if (i.commandName === "adivinar") {
+    const c = ["Rojo", "Azul", "Verde", "Negro", "Blanco"];
+    return i.reply(c[Math.floor(Math.random() * c.length)]);
+  }
 });
 
 client.login(process.env.TOKEN);
