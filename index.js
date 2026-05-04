@@ -29,12 +29,14 @@ const client = new Client({
 
 const prefix = "n!";
 
+// CANALES
 const WELCOME_CHANNEL_ID = "1478407879076872386";
 const LEAVE_CHANNEL_ID = "1478407852950294610";
 
+// ECONOMÍA SIMPLE
 const money = {};
 
-// ================= SLASH =================
+// ================= SLASH COMMANDS =================
 const commands = [
   new SlashCommandBuilder().setName("ping").setDescription("🏓 Pong"),
 
@@ -83,18 +85,35 @@ client.on("ready", () => {
   console.log(`Bot listo como ${client.user.tag}`);
 });
 
-// ================= BIENVENIDA =================
+// ================= BIENVENIDA (PRO EXACTA QUE PEDISTE) =================
 client.on("guildMemberAdd", member => {
   const canal = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
   if (!canal) return;
 
   const embed = new EmbedBuilder()
     .setColor(0xFFD700)
-    .setTitle("🌟 NUEVO MIEMBRO")
-    .setDescription(`Bienvenido ${member.user.username}`)
-    .setThumbnail(member.user.displayAvatarURL());
+    .setTitle("🌟 ¡NUEVO MIEMBRO EN LA TIENDA! 🌟")
+    .setDescription(
+`Nos alegra tenerte por aquí, ${member.user}.
 
-  canal.send({ embeds: [embed] });
+Asegúrate de leer las reglas y revisar nuestros canales de la comunidad.
+
+🎮 ¿Qué ofrecemos?
+
+• Comunidad activa  
+• Más de 500 uncopylockeds  
+• Staff rápido y eficiente  
+
+Recuerda leer la normativa para evitar sanciones.`
+    )
+    .setFooter({
+      text: `Eres el usuario #${member.guild.memberCount} del servidor • hoy a las ${new Date().toLocaleTimeString()}`
+    });
+
+  canal.send({
+    content: `¡Hey ${member.user}, bienvenido a la comunidad!`,
+    embeds: [embed]
+  });
 });
 
 // ================= DESPEDIDA =================
@@ -121,74 +140,54 @@ client.on("messageCreate", async (message) => {
   const id = message.author.id;
   if (!money[id]) money[id] = 0;
 
-  // ================= PRO HELP =================
+  // HELP
   if (cmd === "help") {
     const embed = new EmbedBuilder()
       .setColor(0x5865F2)
-      .setTitle("🤖 NIROX SYSTEM PANEL")
-      .setDescription("Comandos disponibles del bot")
+      .setTitle("🤖 NIROX BOT PANEL")
       .addFields(
-        {
-          name: "⚡ BÁSICOS",
-          value: "`n!ping` · `n!say` · `n!adivinar` · `n!coinflip`"
-        },
-        {
-          name: "👤 INFORMACIÓN",
-          value: "`n!userinfo` · `n!serverinfo` · `n!avatar`"
-        },
-        {
-          name: "🛡 MODERACIÓN",
-          value: "`n!ban` · `n!kick`"
-        },
-        {
-          name: "💰 ECONOMÍA",
-          value: "`n!balance` · `n!daily`"
-        },
-        {
-          name: "⚡ SLASH COMMANDS",
-          value: "`/ping` `/say` `/8ball` `/coinflip` `/adivinar` `/balance` `/daily` `/ban` `/kick`"
-        }
-      )
-      .setFooter({ text: "Nirox Bot • System Ready" })
-      .setTimestamp();
+        { name: "⚡ Básicos", value: "`n!ping` `n!say` `n!adivinar` `n!coinflip`" },
+        { name: "👤 Info", value: "`n!userinfo` `n!serverinfo` `n!avatar`" },
+        { name: "🛡 Moderación", value: "`n!ban` `n!kick`" },
+        { name: "💰 Economía", value: "`n!balance` `n!daily`" },
+        { name: "⚡ Slash", value: "`/ping /say /8ball /coinflip /adivinar /balance /daily /ban /kick`" }
+      );
 
     return message.channel.send({ embeds: [embed] });
   }
 
-  // ================= ECONOMÍA =================
-  if (cmd === "balance") {
-    return message.channel.send(`💰 Tienes **${money[id]} coins**`);
-  }
+  // ECONOMÍA
+  if (cmd === "balance") return message.channel.send(`💰 ${money[id]} coins`);
 
   if (cmd === "daily") {
     money[id] += 100;
-    return message.channel.send("💰 +100 coins diarios");
+    return message.channel.send("💰 +100 coins");
   }
 
-  // ================= MODERACIÓN =================
+  // MODERACIÓN
   if (cmd === "ban") {
     if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers))
-      return message.reply("❌ Sin permisos");
+      return message.reply("Sin permisos");
 
-    const member = message.mentions.members.first();
-    if (!member) return message.reply("Menciona alguien");
+    const m = message.mentions.members.first();
+    if (!m) return message.reply("Menciona alguien");
 
-    member.ban();
-    return message.channel.send("🔨 Usuario baneado");
+    m.ban();
+    return message.channel.send("🔨 Baneado");
   }
 
   if (cmd === "kick") {
     if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers))
-      return message.reply("❌ Sin permisos");
+      return message.reply("Sin permisos");
 
-    const member = message.mentions.members.first();
-    if (!member) return message.reply("Menciona alguien");
+    const m = message.mentions.members.first();
+    if (!m) return message.reply("Menciona alguien");
 
-    member.kick();
-    return message.channel.send("👢 Usuario kickeado");
+    m.kick();
+    return message.channel.send("👢 Kickeado");
   }
 
-  // ================= BÁSICOS =================
+  // BÁSICOS
   if (cmd === "ping") return message.channel.send("🏓 Pong");
 
   if (cmd === "say") {
