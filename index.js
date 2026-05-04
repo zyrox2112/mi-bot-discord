@@ -1,3 +1,11 @@
+const express = require("express");
+const app = express();
+
+app.get("/", (req, res) => {
+  res.send("Bot activo");
+});
+
+app.listen(10000);
 process.on('unhandledRejection', console.error);
 process.on('uncaughtException', console.error);
 require('dotenv').config();
