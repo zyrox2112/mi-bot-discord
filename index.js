@@ -1,14 +1,18 @@
+require('dotenv').config();
+
 const express = require("express");
 const app = express();
 
 app.get("/", (req, res) => {
-  res.send("Bot activo");
+    res.send("Bot activo");
 });
 
-app.listen(10000);
+// IMPORTANTE: puerto dinámico para Render
+app.listen(process.env.PORT || 10000);
+
 process.on('unhandledRejection', console.error);
 process.on('uncaughtException', console.error);
-require('dotenv').config();
+
 const { Client, GatewayIntentBits, PermissionsBitField, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
 const client = new Client({
@@ -110,14 +114,14 @@ client.on('guildMemberAdd', member => {
         .setTitle("🌟 ¡NUEVO MIEMBRO EN LA TIENDA! 🌟")
         .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
         .setDescription(
-`Nos alegra tenerte por aquí, **${member.user.username}**. Asegúrate de leer las reglas y revisar nuestros canales de uncopylockeds.
+`Nos alegra tenerte por aquí, **${member.user.username}**. Asegúrate de leer las reglas y revisar nuestros canales.
 
 🎮 ¿Qué ofrecemos?
 • Comunidad activa.
 • Más de 500 uncopylockeds.
 • Staff rápido y eficiente.
 
-Recuerda leer canales de normativa para no obtener sanciones.`
+Recuerda leer las normas.`
         )
         .setFooter({
             text: `Eres el usuario #${member.guild.memberCount} del servidor • hoy a las ${hora}`
@@ -137,10 +141,8 @@ client.on('guildMemberRemove', member => {
         minute: '2-digit'
     });
 
-    // mensaje normal
     canal.send(`😢 ${member.user} ha salido de la comunidad...`);
 
-    // embed
     const embed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("❌ UN MIEMBRO HA SALIDO ❌")
@@ -148,9 +150,7 @@ client.on('guildMemberRemove', member => {
         .setDescription(
 `El usuario **${member.user.username}** ha abandonado el servidor.
 
-Esperamos que haya tenido una buena experiencia en la comunidad.
-
-Siempre será bienvenido de vuelta.`
+Esperamos que haya tenido una buena experiencia.`
         )
         .setFooter({
             text: `Ahora somos ${member.guild.memberCount} miembros • hoy a las ${hora}`
@@ -181,9 +181,13 @@ client.on('messageCreate', async (message) => {
 
     if (cmd === "unmute") {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+
         const user = message.mentions.members.first();
+        if (!user) return message.reply("Usuario no encontrado");
+
         let role = message.guild.roles.cache.find(r => r.name === "Muted");
         if (!role) return message.reply("No existe rol Muted");
+
         user.roles.remove(role);
         message.channel.send("🔊 Desmuteado");
     }
@@ -222,12 +226,16 @@ client.on('interactionCreate', async interaction => {
 
     if (name === "say") {
         const texto = interaction.options.getString('texto');
-        if (texto.includes("@everyone") || texto.includes("@here")) return interaction.reply("No permitido");
+        if (texto.includes("@everyone") || texto.includes("@here"))
+            return interaction.reply("No permitido");
+
         return interaction.reply(texto);
     }
 
     if (name === "clear") {
-        if (!interaction.memberPermissions.has(PermissionsBitField.Flags.Administrator)) return;
+        if (!interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator))
+            return;
+
         const amount = interaction.options.getInteger('cantidad');
         await interaction.channel.bulkDelete(amount);
         return interaction.reply(`🧹 ${amount} eliminados`);
@@ -235,13 +243,13 @@ client.on('interactionCreate', async interaction => {
 
     if (name === "ban") {
         const user = interaction.options.getMember('usuario');
-        user.ban();
+        if (user) user.ban();
         return interaction.reply("Baneado");
     }
 
     if (name === "kick") {
         const user = interaction.options.getMember('usuario');
-        user.kick();
+        if (user) user.kick();
         return interaction.reply("Kickeado");
     }
 
@@ -249,6 +257,7 @@ client.on('interactionCreate', async interaction => {
         const user = interaction.options.getMember('usuario');
         let role = interaction.guild.roles.cache.find(r => r.name === "Muted");
         if (!role) role = await interaction.guild.roles.create({ name: "Muted" });
+
         user.roles.add(role);
         return interaction.reply("Muteado");
     }
@@ -257,6 +266,7 @@ client.on('interactionCreate', async interaction => {
         const user = interaction.options.getMember('usuario');
         let role = interaction.guild.roles.cache.find(r => r.name === "Muted");
         if (!role) return interaction.reply("No hay rol Muted");
+
         user.roles.remove(role);
         return interaction.reply("Desmuteado");
     }
@@ -273,18 +283,22 @@ client.on('interactionCreate', async interaction => {
         return interaction.reply("Nick cambiado");
     }
 
-    if (name === "ruleta") return interaction.reply(Math.random() < 0.5 ? "💀 Perdiste" : "🎉 Ganaste");
+    if (name === "ruleta")
+        return interaction.reply(Math.random() < 0.5 ? "💀 Perdiste" : "🎉 Ganaste");
 
-    if (name === "adivinar") return interaction.reply(`Número: ${Math.floor(Math.random()*10)}`);
+    if (name === "adivinar")
+        return interaction.reply(`Número: ${Math.floor(Math.random() * 10)}`);
 
-    if (name === "coinflip") return interaction.reply(Math.random() < 0.5 ? "Cara" : "Cruz");
+    if (name === "coinflip")
+        return interaction.reply(Math.random() < 0.5 ? "Cara" : "Cruz");
 
     if (name === "userinfo") {
         const user = interaction.options.getUser('usuario') || interaction.user;
         return interaction.reply(user.tag);
     }
 
-    if (name === "serverinfo") return interaction.reply(interaction.guild.name);
+    if (name === "serverinfo")
+        return interaction.reply(interaction.guild.name);
 
     if (name === "avatar") {
         const user = interaction.options.getUser('usuario') || interaction.user;
