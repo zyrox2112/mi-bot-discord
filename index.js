@@ -29,14 +29,12 @@ const client = new Client({
 
 const prefix = "n!";
 
-// CANALES
 const WELCOME_CHANNEL_ID = "1478407879076872386";
 const LEAVE_CHANNEL_ID = "1478407852950294610";
 
-// ECONOMÍA SIMPLE
 const money = {};
 
-// ================= SLASH COMMANDS =================
+// ================= SLASH =================
 const commands = [
   new SlashCommandBuilder().setName("ping").setDescription("🏓 Pong"),
 
@@ -85,18 +83,27 @@ client.on("ready", () => {
   console.log(`Bot listo como ${client.user.tag}`);
 });
 
-// ================= BIENVENIDA (PRO EXACTA QUE PEDISTE) =================
+// ================= HORA CHILE =================
+function getChileTime() {
+  return new Date().toLocaleTimeString("es-CL", {
+    timeZone: "America/Santiago",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+// ================= BIENVENIDA =================
 client.on("guildMemberAdd", member => {
   const canal = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
   if (!canal) return;
 
   const embed = new EmbedBuilder()
     .setColor(0xFFD700)
-    .setTitle("🌟 ¡NUEVO MIEMBRO EN LA TIENDA! 🌟")
+    .setTitle("🌟 ¡NUEVO MIEMBRO EN EL SERVIDOR! 🌟")
     .setDescription(
 `Nos alegra tenerte por aquí, ${member.user}.
 
-Asegúrate de leer las reglas y revisar nuestros canales de la comunidad.
+Asegúrate de leer las reglas y revisar nuestros canales del servidor.
 
 🎮 ¿Qué ofrecemos?
 
@@ -104,10 +111,11 @@ Asegúrate de leer las reglas y revisar nuestros canales de la comunidad.
 • Más de 500 uncopylockeds  
 • Staff rápido y eficiente  
 
-Recuerda leer la normativa para evitar sanciones.`
+Recuerda la normativa para evitar sanciones.`
     )
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
     .setFooter({
-      text: `Eres el usuario #${member.guild.memberCount} del servidor • hoy a las ${new Date().toLocaleTimeString()}`
+      text: `Eres el usuario #${member.guild.memberCount} del servidor • hoy a las ${getChileTime()}`
     });
 
   canal.send({
@@ -123,8 +131,18 @@ client.on("guildMemberRemove", member => {
 
   const embed = new EmbedBuilder()
     .setColor(0xff0000)
-    .setTitle("👋 Se fue un miembro")
-    .setDescription(`${member.user.username} salió del servidor`);
+    .setTitle("💔 UN MIEMBRO HA SALIDO")
+    .setDescription(
+`El usuario ${member.user} ha abandonado el servidor.
+
+Esperamos que haya tenido una buena experiencia en la comunidad.
+
+Siempre será bienvenido de vuelta.`
+    )
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+    .setFooter({
+      text: `Ahora somos ${member.guild.memberCount} miembros • hoy a las ${getChileTime()}`
+    });
 
   canal.send({ embeds: [embed] });
 });
@@ -140,7 +158,6 @@ client.on("messageCreate", async (message) => {
   const id = message.author.id;
   if (!money[id]) money[id] = 0;
 
-  // HELP
   if (cmd === "help") {
     const embed = new EmbedBuilder()
       .setColor(0x5865F2)
@@ -156,7 +173,6 @@ client.on("messageCreate", async (message) => {
     return message.channel.send({ embeds: [embed] });
   }
 
-  // ECONOMÍA
   if (cmd === "balance") return message.channel.send(`💰 ${money[id]} coins`);
 
   if (cmd === "daily") {
@@ -164,7 +180,6 @@ client.on("messageCreate", async (message) => {
     return message.channel.send("💰 +100 coins");
   }
 
-  // MODERACIÓN
   if (cmd === "ban") {
     if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers))
       return message.reply("Sin permisos");
@@ -187,7 +202,6 @@ client.on("messageCreate", async (message) => {
     return message.channel.send("👢 Kickeado");
   }
 
-  // BÁSICOS
   if (cmd === "ping") return message.channel.send("🏓 Pong");
 
   if (cmd === "say") {
