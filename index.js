@@ -7,10 +7,10 @@ app.get("/", (req, res) => {
 
 app.listen(10000);
 
-process.on('unhandledRejection', console.error);
-process.on('uncaughtException', console.error);
+process.on("unhandledRejection", console.error);
+process.on("uncaughtException", console.error);
 
-require('dotenv').config();
+require("dotenv").config();
 const {
     Client,
     GatewayIntentBits,
@@ -19,7 +19,7 @@ const {
     Routes,
     SlashCommandBuilder,
     EmbedBuilder
-} = require('discord.js');
+} = require("discord.js");
 
 const client = new Client({
     intents: [
@@ -32,51 +32,29 @@ const client = new Client({
 
 const prefix = "n!";
 
-// CANALES
 const WELCOME_CHANNEL_ID = "1478407879076872386";
 const LEAVE_CHANNEL_ID = "1478407852950294610";
 
 // ================= SLASH COMMANDS =================
 const commands = [
-    new SlashCommandBuilder().setName('ping').setDescription('Responde pong'),
+    new SlashCommandBuilder().setName("ping").setDescription("Responde pong"),
 
-    new SlashCommandBuilder().setName('8ball')
-        .setDescription('Pregunta algo')
-        .addStringOption(o => o.setName('pregunta').setDescription('Tu pregunta').setRequired(true)),
+    new SlashCommandBuilder().setName("8ball")
+        .setDescription("Pregunta algo")
+        .addStringOption(o => o.setName("pregunta").setDescription("Pregunta").setRequired(true)),
 
-    new SlashCommandBuilder().setName('say')
-        .setDescription('El bot dice algo')
-        .addStringOption(o => o.setName('texto').setDescription('Texto').setRequired(true)),
+    new SlashCommandBuilder().setName("say")
+        .setDescription("El bot dice algo")
+        .addStringOption(o => o.setName("texto").setDescription("Texto").setRequired(true)),
 
-    new SlashCommandBuilder().setName('clear')
-        .setDescription('Borrar mensajes')
-        .addIntegerOption(o => o.setName('cantidad').setDescription('Cantidad').setRequired(true)),
+    new SlashCommandBuilder().setName("coinflip").setDescription("Cara o cruz"),
+    new SlashCommandBuilder().setName("adivinar").setDescription("Adivinar"),
+    new SlashCommandBuilder().setName("userinfo").setDescription("Info usuario"),
+    new SlashCommandBuilder().setName("serverinfo").setDescription("Info server"),
+    new SlashCommandBuilder().setName("avatar").setDescription("Avatar")
+].map(c => c.toJSON());
 
-    new SlashCommandBuilder().setName('ban').setDescription('Banear')
-        .addUserOption(o => o.setName('usuario').setDescription('Usuario').setRequired(true)),
-
-    new SlashCommandBuilder().setName('kick').setDescription('Kick')
-        .addUserOption(o => o.setName('usuario').setDescription('Usuario').setRequired(true)),
-
-    new SlashCommandBuilder().setName('mute').setDescription('Mute')
-        .addUserOption(o => o.setName('usuario').setDescription('Usuario').setRequired(true)),
-
-    new SlashCommandBuilder().setName('unmute').setDescription('Unmute')
-        .addUserOption(o => o.setName('usuario').setDescription('Usuario').setRequired(true)),
-
-    new SlashCommandBuilder().setName('warn').setDescription('Warn')
-        .addUserOption(o => o.setName('usuario').setDescription('Usuario').setRequired(true)),
-
-    new SlashCommandBuilder().setName('nick').setDescription('Nick')
-        .addUserOption(o => o.setName('usuario').setDescription('Usuario').setRequired(true))
-        .addStringOption(o => o.setName('nombre').setDescription('Nuevo nick').setRequired(true)),
-
-    new SlashCommandBuilder().setName('ruleta').setDescription('Ruleta'),
-    new SlashCommandBuilder().setName('adivinar').setDescription('Adivinar'),
-    new SlashCommandBuilder().setName('coinflip').setDescription('Cara o cruz')
-].map(cmd => cmd.toJSON());
-
-const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
 (async () => {
     try {
@@ -90,51 +68,39 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 })();
 
 // ================= READY =================
-client.on('ready', () => {
-    console.log(`Nirox listo como ${client.user.tag}`);
+client.on("ready", () => {
+    console.log(`Bot listo como ${client.user.tag}`);
 });
 
 // ================= BIENVENIDA =================
-client.on('guildMemberAdd', member => {
+client.on("guildMemberAdd", member => {
     const canal = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
     if (!canal) return;
 
-    const hora = new Date().toLocaleTimeString('es-CL', {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-
     const embed = new EmbedBuilder()
         .setColor(0xFFD700)
-        .setTitle("🌟 NUEVO MIEMBRO 🌟")
-        .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-        .setDescription(`Bienvenido **${member.user.username}**`)
-        .setFooter({ text: `Miembro #${member.guild.memberCount} • ${hora}` });
+        .setTitle("🌟 Bienvenido")
+        .setDescription(`Bienvenido ${member.user.username}`)
+        .setThumbnail(member.user.displayAvatarURL());
 
     canal.send({ embeds: [embed] });
 });
 
 // ================= DESPEDIDA =================
-client.on('guildMemberRemove', member => {
+client.on("guildMemberRemove", member => {
     const canal = member.guild.channels.cache.get(LEAVE_CHANNEL_ID);
     if (!canal) return;
 
-    const hora = new Date().toLocaleTimeString('es-CL', {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-
     const embed = new EmbedBuilder()
         .setColor(0xff0000)
-        .setTitle("❌ SE FUE UN MIEMBRO ❌")
-        .setDescription(`**${member.user.username}** salió del servidor`)
-        .setFooter({ text: `Ahora somos ${member.guild.memberCount} • ${hora}` });
+        .setTitle("👋 Se fue un miembro")
+        .setDescription(`${member.user.username} salió del servidor`);
 
     canal.send({ embeds: [embed] });
 });
 
 // ================= PREFIX COMMANDS =================
-client.on('messageCreate', async (message) => {
+client.on("messageCreate", async (message) => {
     try {
         if (!message.content.startsWith(prefix) || message.author.bot) return;
         if (!message.guild) return;
@@ -146,9 +112,23 @@ client.on('messageCreate', async (message) => {
         if (cmd === "help") {
             const embed = new EmbedBuilder()
                 .setColor(0x000000)
-                .setTitle("📜 COMANDOS")
-                .setDescription("Lista de comandos disponibles");
+                .setTitle("📜 COMANDOS NIROX")
+                .setDescription(
+`n!ping  
+n!say  
+n!adivinar  
+n!coinflip  
+n!userinfo  
+n!serverinfo  
+n!avatar  
+n!help`
+                );
             return message.channel.send({ embeds: [embed] });
+        }
+
+        // PING
+        if (cmd === "ping") {
+            return message.channel.send("🏓 Pong");
         }
 
         // SAY FIX
@@ -165,8 +145,8 @@ client.on('messageCreate', async (message) => {
 
         // ADIVINAR FIX
         if (cmd === "adivinar") {
-            const opciones = ["Rojo", "Azul", "Verde", "Negro", "Blanco"];
-            return message.channel.send(opciones[Math.floor(Math.random() * opciones.length)]);
+            const respuestas = ["Rojo", "Azul", "Verde", "Negro", "Blanco"];
+            return message.channel.send(respuestas[Math.floor(Math.random() * respuestas.length)]);
         }
 
         // USERINFO
@@ -188,12 +168,12 @@ client.on('messageCreate', async (message) => {
 
     } catch (err) {
         console.log(err);
-        message.channel.send("Error ejecutando comando");
+        message.channel.send("Error en comando");
     }
 });
 
 // ================= SLASH =================
-client.on('interactionCreate', async interaction => {
+client.on("interactionCreate", async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
 
     const name = interaction.commandName;
@@ -206,7 +186,7 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (name === "say") {
-        const texto = interaction.options.getString('texto');
+        const texto = interaction.options.getString("texto");
         return interaction.reply(texto);
     }
 
@@ -215,12 +195,12 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (name === "adivinar") {
-        const opciones = ["Rojo", "Azul", "Verde", "Negro", "Blanco"];
-        return interaction.reply(opciones[Math.floor(Math.random() * opciones.length)]);
+        const respuestas = ["Rojo", "Azul", "Verde", "Negro", "Blanco"];
+        return interaction.reply(respuestas[Math.floor(Math.random() * respuestas.length)]);
     }
 
     if (name === "userinfo") {
-        const user = interaction.options.getUser('usuario') || interaction.user;
+        const user = interaction.options.getUser("usuario") || interaction.user;
         return interaction.reply(user.tag);
     }
 
@@ -229,7 +209,7 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (name === "avatar") {
-        const user = interaction.options.getUser('usuario') || interaction.user;
+        const user = interaction.options.getUser("usuario") || interaction.user;
         return interaction.reply(user.displayAvatarURL());
     }
 });
