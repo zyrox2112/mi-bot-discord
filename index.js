@@ -29,6 +29,7 @@ const client = new Client({
 });
 
 const prefix = "n!";
+const CLIENT_ID = "1500615147293769808";
 
 // ====== UTIL ======
 const eco = {};
@@ -109,49 +110,35 @@ async function run(ctx,name,args=[]){
     return;
   }
 
-  // ===== ECONOMÍA (PRO) =====
+  // ===== EJEMPLOS PRO =====
+
   if(name==="balance"){
     const total = me.wallet + me.bank;
     return send(embed("💰 Balance",
-      `**💵 Wallet:** ${me.wallet}\n**🏦 Banco:** ${me.bank}\n\n**📊 Total:** ${total}`,
+      `💵 Wallet: ${me.wallet}\n🏦 Banco: ${me.bank}\n\nTotal: ${total}`,
       "#00ff88",user));
   }
 
   if(name==="work"){
     const g=rnd(50,150); me.wallet+=g;
-    return send(embed("💼 Trabajo",`Ganaste **${g} monedas**`,"#00ff88",user));
+    return send(embed("💼 Trabajo",`Ganaste ${g}`,"#00ff88",user));
   }
 
-  if(name==="crime"){
-    const g=rnd(-150,250); me.wallet+=g;
-    return send(embed(g<0?"🚓 Fallaste":"🕵️ Éxito",
-      g<0?`Perdiste ${Math.abs(g)}`:`Ganaste ${g}`,
-      g<0?"#ff0000":"#00ff88",user));
+  if(name==="coinflip"){
+    return send(embed("🪙 Coinflip",Math.random()<0.5?"Cara":"Cruz","#5865F2",user));
   }
 
-  if(name==="transfer"){
-    const target = isI ? ctx.options.getUser("usuario") : ctx.mentions.users.first();
-    const amount = isI ? ctx.options.getInteger("cantidad") : Number(args[1]||0);
-    if(!target || !amount) return;
-    if(me.wallet < amount) return send(embed("❌","No tienes dinero","#ff0000",user));
-
-    const t = getBal(target.id);
-    me.wallet -= amount;
-    t.wallet += amount;
-
-    return send(embed("💸 Transferencia",
-      `Enviaste **${amount}** a ${target.tag}`,
-      "#00ff88",user));
+  if(name==="say"){
+    const texto = isI ? ctx.options.getString("texto") : args.join(" ");
+    if(!texto) return;
+    if(!isI) await ctx.delete().catch(()=>{});
+    return channel.send(texto);
   }
 
-  // ===== MOD CON CONFIRMACIÓN =====
+  // ===== BAN CON BOTONES =====
   if(name==="ban"){
     const target = isI ? ctx.options.getUser("usuario") : ctx.mentions.users.first();
     const reason = isI ? ctx.options.getString("razon") : args.slice(1).join(" ") || "Sin razón";
-
-    if(!member.permissions.has(PermissionsBitField.Flags.BanMembers)){
-      return send(embed("❌ Error","Sin permisos","#ff0000",user));
-    }
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId("yes").setLabel("Confirmar").setStyle(ButtonStyle.Danger),
@@ -177,14 +164,6 @@ async function run(ctx,name,args=[]){
     return;
   }
 
-  // ===== SAY =====
-  if(name==="say"){
-    const texto = isI ? ctx.options.getString("texto") : args.join(" ");
-    if(!texto) return;
-    if(!isI) await ctx.delete().catch(()=>{});
-    return channel.send(texto);
-  }
-
   // ===== DEFAULT =====
   return send(embed("⚙️ Comando",
     `El comando **${name}** se ejecutó correctamente`,
@@ -206,10 +185,12 @@ client.on("interactionCreate", i=>{
   run(i,i.commandName,[]);
 });
 
-// ===== REGISTER CON INPUTS =====
+// ===== REGISTER (ANTI CRASH) =====
 const rest=new REST({version:"10"}).setToken(process.env.TOKEN);
 
 (async()=>{
+  if(process.env.REGISTER !== "true") return;
+
   const slash = [];
 
   for(const name of cmds){
@@ -217,8 +198,7 @@ const rest=new REST({version:"10"}).setToken(process.env.TOKEN);
       .setName(name)
       .setDescription(`Comando ${name}`);
 
-    // inputs masivos
-    if(["ban","kick","rob","transfer"].includes(name)){
+    if(["ban","kick","transfer","rob"].includes(name)){
       cmd.addUserOption(o=>o.setName("usuario").setDescription("Usuario").setRequired(true));
     }
 
@@ -226,26 +206,16 @@ const rest=new REST({version:"10"}).setToken(process.env.TOKEN);
       cmd.addStringOption(o=>o.setName("razon").setDescription("Motivo"));
     }
 
-    if(["clear","slowmode","timer","remind"].includes(name)){
-      cmd.addIntegerOption(o=>o.setName("cantidad").setDescription("Número").setRequired(true));
-    }
-
-    if(["say","announce","embedbuilder"].includes(name)){
+    if(["say","announce"].includes(name)){
       cmd.addStringOption(o=>o.setName("texto").setDescription("Texto").setRequired(true));
-    }
-
-    if(["8ball","poll"].includes(name)){
-      cmd.addStringOption(o=>o.setName("pregunta").setDescription("Pregunta").setRequired(true));
     }
 
     slash.push(cmd.toJSON());
   }
 
-  await rest.put(
-    Routes.applicationCommands("1500615147293769808"),
-    { body: slash }
-  );
+  await rest.put(Routes.applicationCommands(CLIENT_ID), { body: slash });
+  console.log("SLASH REGISTRADOS");
 })();
 
-client.once("ready",()=>console.log("LISTO ULTRA PRO"));
+client.once("ready",()=>console.log("BOT ULTRA PRO"));
 client.login(process.env.TOKEN);
