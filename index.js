@@ -110,8 +110,6 @@ async function run(ctx,name,args=[]){
     return;
   }
 
-  // ===== EJEMPLOS PRO =====
-
   if(name==="balance"){
     const total = me.wallet + me.bank;
     return send(embed("💰 Balance",
@@ -135,36 +133,16 @@ async function run(ctx,name,args=[]){
     return channel.send(texto);
   }
 
-  // ===== BAN CON BOTONES =====
+  // ===== BAN =====
   if(name==="ban"){
     const target = isI ? ctx.options.getUser("usuario") : ctx.mentions.users.first();
     const reason = isI ? ctx.options.getString("razon") : args.slice(1).join(" ") || "Sin razón";
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("yes").setLabel("Confirmar").setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId("no").setLabel("Cancelar").setStyle(ButtonStyle.Secondary)
-    );
-
-    const msg = await ctx.reply({
-      embeds:[embed("⚠️ Confirmar Ban",`Usuario: ${target?.tag}\nRazón: ${reason}`,"#ffaa00",user)],
-      components:[row],
-      fetchReply:true
-    });
-
-    const col = msg.createMessageComponentCollector({time:15000});
-    col.on("collect", async i=>{
-      if(i.user.id !== user.id) return;
-
-      if(i.customId==="yes"){
-        await i.update({embeds:[embed("🔨 Ban","Ejecutado","#ff0000",user)],components:[]});
-      } else {
-        await i.update({embeds:[embed("❌ Cancelado","No se hizo nada","#2b2d31",user)],components:[]});
-      }
-    });
-    return;
+    return send(embed("🔨 Ban",
+      `Usuario: ${target?.tag}\nRazón: ${reason}`,
+      "#ff0000",user));
   }
 
-  // ===== DEFAULT =====
   return send(embed("⚙️ Comando",
     `El comando **${name}** se ejecutó correctamente`,
     "#2b2d31",user));
@@ -185,37 +163,72 @@ client.on("interactionCreate", i=>{
   run(i,i.commandName,[]);
 });
 
-// ===== REGISTER (ANTI CRASH) =====
+// ===== REGISTER =====
 const rest=new REST({version:"10"}).setToken(process.env.TOKEN);
 
 (async()=>{
   if(process.env.REGISTER !== "true") return;
 
-  const slash = [];
-
-  for(const name of cmds){
-    const cmd = new SlashCommandBuilder()
-      .setName(name)
-      .setDescription(`Comando ${name}`);
-
-    if(["ban","kick","transfer","rob"].includes(name)){
-      cmd.addUserOption(o=>o.setName("usuario").setDescription("Usuario").setRequired(true));
-    }
-
-    if(["ban","kick"].includes(name)){
-      cmd.addStringOption(o=>o.setName("razon").setDescription("Motivo"));
-    }
-
-    if(["say","announce"].includes(name)){
-      cmd.addStringOption(o=>o.setName("texto").setDescription("Texto").setRequired(true));
-    }
-
-    slash.push(cmd.toJSON());
-  }
+  const slash = cmds.map(c =>
+    new SlashCommandBuilder().setName(c).setDescription(`Comando ${c}`).toJSON()
+  );
 
   await rest.put(Routes.applicationCommands(CLIENT_ID), { body: slash });
-  console.log("SLASH REGISTRADOS");
 })();
 
-client.once("ready",()=>console.log("BOT ULTRA PRO"));
+// ====== BIENVENIDA ======
+client.on("guildMemberAdd", member => {
+  const canal = member.guild.channels.cache.find(c => c.name === "general");
+  if(!canal) return;
+
+  const t = Math.floor(Date.now()/1000);
+
+  const embed = new EmbedBuilder()
+    .setColor("#ffd700")
+    .setTitle("🌟 ¡NUEVO MIEMBRO EN EL SERVIDOR! 🌟")
+    .setDescription(
+`Nos alegra tenerte por aquí, ${member.user.username}.
+
+🎮 ¿Qué ofrecemos?
+
+• Comunidad activa  
+• Más de 500 uncopylockeds  
+• Staff rápido y eficiente  
+
+Eres el usuario #${member.guild.memberCount} • <t:${t}:R>`
+    )
+    .setThumbnail(member.user.displayAvatarURL());
+
+  canal.send({
+    content: `¡Hey ${member}, bienvenido a la comunidad!`,
+    embeds: [embed]
+  });
+});
+
+// ====== DESPEDIDA ======
+client.on("guildMemberRemove", member => {
+  const canal = member.guild.channels.cache.find(c => c.name === "despedidas");
+  if(!canal) return;
+
+  const t = Math.floor(Date.now()/1000);
+
+  const embed = new EmbedBuilder()
+    .setColor("#ff0000")
+    .setTitle("💔 UN MIEMBRO HA SALIDO")
+    .setDescription(
+`${member.user.username} ha salido del servidor.
+
+Ahora somos ${member.guild.memberCount} miembros.
+
+<t:${t}:R>`
+    )
+    .setThumbnail(member.user.displayAvatarURL());
+
+  canal.send({
+    content: `👋 Se fue ${member.user}`,
+    embeds: [embed]
+  });
+});
+
+client.once("ready",()=>console.log("BOT LISTO"));
 client.login(process.env.TOKEN);
