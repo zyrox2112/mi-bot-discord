@@ -32,7 +32,7 @@ const client = new Client({
 const prefix = "n!";
 const CLIENT_ID = "1500615147293769808";
 
-// ====== IDS CANALES ======
+// ====== IDS ======
 const WELCOME_CHANNEL = "1478407879076872386";
 const GOODBYE_CHANNEL = "1478407852950294610";
 
@@ -40,10 +40,12 @@ const GOODBYE_CHANNEL = "1478407852950294610";
 const eco = {};
 
 function getBal(id){
-  if(!eco[id]) eco[id] = {
-    wallet: 0,
-    bank: 0
-  };
+  if(!eco[id]){
+    eco[id] = {
+      wallet: 0,
+      bank: 0
+    };
+  }
 
   return eco[id];
 }
@@ -53,6 +55,7 @@ function rnd(min,max){
 }
 
 function embed(title, desc, color="#2b2d31", user){
+
   const e = new EmbedBuilder()
     .setTitle(title)
     .setDescription(desc)
@@ -80,11 +83,13 @@ const cmds = [
 
 // ====== HELP ======
 function helpPages(){
+
   const pages = [];
 
   for(let i=0;i<cmds.length;i+=10){
 
-    const page = new EmbedBuilder()
+    pages.push(
+      new EmbedBuilder()
       .setColor("#000000")
       .setTitle("📜 Nirox Help")
       .setDescription(
@@ -94,10 +99,9 @@ function helpPages(){
         .join("\n")
       )
       .setFooter({
-        text: `Página ${Math.floor(i/10)+1}`
-      });
-
-    pages.push(page);
+        text:`Página ${Math.floor(i/10)+1}`
+      })
+    );
   }
 
   return pages;
@@ -110,12 +114,11 @@ async function run(ctx,name,args=[]){
 
   const user = isI ? ctx.user : ctx.author;
   const channel = ctx.channel;
-  const guild = ctx.guild;
   const member = ctx.member;
 
   const me = getBal(user.id);
 
-  const send = async (e) => {
+  const send = async(e)=>{
 
     if(isI){
 
@@ -179,6 +182,7 @@ async function run(ctx,name,args=[]){
       await i.update({
         embeds:[pages[p]]
       });
+
     });
 
     return;
@@ -364,16 +368,18 @@ const rest = new REST({
 // ====== BIENVENIDAS ======
 client.on("guildMemberAdd", async member => {
 
-  const canal = member.guild.channels.cache.get(WELCOME_CHANNEL);
+  try {
 
-  if(!canal) return;
+    const canal = await client.channels.fetch(WELCOME_CHANNEL);
 
-  const timestamp = Math.floor(Date.now()/1000);
+    if(!canal) return;
 
-  const welcomeEmbed = new EmbedBuilder()
-    .setColor("#ffd700")
-    .setTitle("🌟 ¡NUEVO MIEMBRO EN EL SERVIDOR! 🌟")
-    .setDescription(
+    const timestamp = Math.floor(Date.now()/1000);
+
+    const welcomeEmbed = new EmbedBuilder()
+      .setColor("#ffd700")
+      .setTitle("🌟 ¡NUEVO MIEMBRO EN EL SERVIDOR! 🌟")
+      .setDescription(
 `Nos alegra tenerte por aquí, ${member.user.username}.
 
 Asegúrate de leer las reglas y revisar nuestros canales del servidor.
@@ -387,29 +393,35 @@ Asegúrate de leer las reglas y revisar nuestros canales del servidor.
 Recuerda leer la normativa para evitar sanciones.
 
 Eres el usuario #${member.guild.memberCount} • <t:${timestamp}:R>`
-    )
-    .setThumbnail(member.user.displayAvatarURL({ dynamic:true }));
+      )
+      .setThumbnail(member.user.displayAvatarURL({ dynamic:true }));
 
-  canal.send({
-    content: `¡Hey ${member}, bienvenido a la comunidad!`,
-    embeds:[welcomeEmbed]
-  });
+    canal.send({
+      content: `¡Hey ${member}, bienvenido a la comunidad!`,
+      embeds:[welcomeEmbed]
+    });
+
+  } catch(err){
+    console.log(err);
+  }
 
 });
 
 // ====== DESPEDIDAS ======
 client.on("guildMemberRemove", async member => {
 
-  const canal = member.guild.channels.cache.get(GOODBYE_CHANNEL);
+  try {
 
-  if(!canal) return;
+    const canal = await client.channels.fetch(GOODBYE_CHANNEL);
 
-  const timestamp = Math.floor(Date.now()/1000);
+    if(!canal) return;
 
-  const goodbyeEmbed = new EmbedBuilder()
-    .setColor("#ff0000")
-    .setTitle("💔 UN MIEMBRO HA SALIDO")
-    .setDescription(
+    const timestamp = Math.floor(Date.now()/1000);
+
+    const goodbyeEmbed = new EmbedBuilder()
+      .setColor("#ff0000")
+      .setTitle("💔 UN MIEMBRO HA SALIDO")
+      .setDescription(
 `${member.user.username} ha abandonado el servidor.
 
 Esperamos que haya tenido una buena experiencia en la comunidad.
@@ -417,13 +429,17 @@ Esperamos que haya tenido una buena experiencia en la comunidad.
 Siempre será bienvenido de vuelta.
 
 Ahora somos ${member.guild.memberCount} miembros • <t:${timestamp}:R>`
-    )
-    .setThumbnail(member.user.displayAvatarURL({ dynamic:true }));
+      )
+      .setThumbnail(member.user.displayAvatarURL({ dynamic:true }));
 
-  canal.send({
-    content: `👋 Se fue ${member}`,
-    embeds:[goodbyeEmbed]
-  });
+    canal.send({
+      content: `👋 Se fue ${member}`,
+      embeds:[goodbyeEmbed]
+    });
+
+  } catch(err){
+    console.log(err);
+  }
 
 });
 
